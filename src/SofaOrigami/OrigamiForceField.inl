@@ -119,7 +119,6 @@ void OrigamiForceField<DataTypes>::init()
             triangleRight[1] = t2;
             triangleRight[2] = t4;
         }
-//        msg_warning() << triangleLeft[0] << " " << triangleLeft[1] << " " << triangleLeft[2] << " ---- " << triangleRight[0] << " " << triangleRight[1] << " " << triangleRight[2];
         int nbTriangles = Triangles.size();
         bool addLeft = true, addRight = true;
         for (unsigned int j=0; j<Triangles.size();j++)
@@ -128,7 +127,6 @@ void OrigamiForceField<DataTypes>::init()
             {
                 if ( (Triangles[j][0] == triangleLeft[0]) && (Triangles[j][1] == triangleLeft[1]) && (Triangles[j][2] == triangleLeft[2]) )
                 {
-//                    msg_warning() << "Left triangle Already in!"<< triangleLeft[0] << " " << triangleLeft[1] << " " << triangleLeft[2];
                     addLeft = false;
                 }
             }
@@ -139,7 +137,6 @@ void OrigamiForceField<DataTypes>::init()
             {
                 if ( (Triangles[j][0] == triangleRight[0]) && (Triangles[j][1] == triangleRight[1]) && (Triangles[j][2] == triangleRight[2]) )
                 {
-//                    msg_warning() << "Right triangle Already in!"<< triangleRight[0] << " " << triangleRight[1] << " " << triangleRight[2];
                     addRight = false;
                 }
             }
@@ -155,18 +152,14 @@ void OrigamiForceField<DataTypes>::init()
             nbTriangles++;
             Triangles.resize(nbTriangles);
             Triangles[nbTriangles-1] = triangleLeft;
-//            msg_warning() << "Adding left triangle:" << triangleLeft[0] << " " << triangleLeft[1] << " " << triangleLeft[2];
         }
         if (addRight)
         {
             nbTriangles++;
             Triangles.resize(nbTriangles);
             Triangles[nbTriangles-1] = triangleRight;
-//            msg_warning() << "Adding right triangle:" << triangleRight[0] << " " << triangleRight[1] << " " << triangleRight[2];
 
         }
-//        Triangles[]
-//        msg_warning() << "My springs at init" <<origamiSprings[i].m1;
     }
 
 
@@ -188,11 +181,9 @@ void OrigamiForceField<DataTypes>::addFaceConstraints(
         int i,
         const std::vector<int> triangleInOrigami)
 {
-//    msg_warning() << "Staaaaaaaaaaaaaaaaaaaart of face constraiiiiiiiiiiiiiiiiiiiiiint";
     int a = triangleInOrigami[0];
     int b = triangleInOrigami[1];
     int c = triangleInOrigami[2];
-//    msg_warning() << "a is : " << a << " b is: " << b << " c is : " << c;
     Real kFace = 0.0;
     typename DataTypes::CPos ab = DataTypes::getCPos(p1[b])-DataTypes::getCPos(p1[a]);
     typename DataTypes::CPos ac = DataTypes::getCPos(p1[c])-DataTypes::getCPos(p1[a]);
@@ -200,11 +191,9 @@ void OrigamiForceField<DataTypes>::addFaceConstraints(
     Real alphaA = acos( dot(ab,ac)/(ab.norm()*ac.norm()) );
     Real alphaB = acos( dot(-ab,bc)/(ab.norm()*bc.norm()) );
     Real alphaC = acos( dot(-ac,-bc)/(ac.norm()*bc.norm()) );
-//    msg_warning() << "the alphas from Faces: " << alphaA << " " << alphaB << " " << alphaC;
 
     typename DataTypes::CPos normal=cross(ab,ac);
     normal = normal/normal.norm();
-//    msg_warning() << "the normal: " << normal;
     bool direct;
     if (normal[2] > 0)
         direct = true;
@@ -229,16 +218,12 @@ void OrigamiForceField<DataTypes>::addFaceConstraints(
 
     Real forceFaceVal;
     forceFaceVal = -kFace*(alphaA-alphaA0);
-//    msg_warning() << "forceFaceVal: " << forceFaceVal;
     if (direct)
         directionForA = cross(normal,ab)/dot(ab,ab) - cross(normal,ac)/dot(ac,ac);
     else
         directionForA = -cross(normal,ab)/dot(ab,ab) + cross(normal,ac)/dot(ac,ac);
     directionForB = cross(normal,ab)/dot(ab,ab);
     directionForC = cross(normal,ac)/dot(ac,ac);
-//    msg_warning() << "directions: " << directionForA;
-//    msg_warning() << "directions: " << directionForB;
-//    msg_warning() << "directions: " << directionForC;
 
     DataTypes::setDPos( f1[a], DataTypes::getDPos(f1[a]) + forceFaceVal*directionForA ) ;
     DataTypes::setDPos( f1[b], DataTypes::getDPos(f1[b]) + forceFaceVal*directionForB ) ;
@@ -254,16 +239,12 @@ void OrigamiForceField<DataTypes>::addFaceConstraints(
         alphaB0 = M_PI_2;
 
     forceFaceVal = -kFace*(alphaB-alphaB0);
-//    msg_warning() << "forceFaceVal: " << forceFaceVal;
     directionForA = cross(normal,-ab)/dot(ab,ab) ;
     if (direct)
         directionForB = -cross(normal,-ab)/dot(ab,ab) + cross(normal,-bc)/dot(bc,bc) ;
     else
         directionForB = cross(normal,-ab)/dot(ab,ab) - cross(normal,-bc)/dot(bc,bc) ;
     directionForC = cross(normal,bc)/dot(bc,bc);
-//    msg_warning() << "directions: " << directionForA;
-//    msg_warning() << "directions: " << directionForB;
-//    msg_warning() << "directions: " << directionForC;
 
     DataTypes::setDPos( f1[a], DataTypes::getDPos(f1[a]) + forceFaceVal*directionForA ) ;
     DataTypes::setDPos( f1[b], DataTypes::getDPos(f1[b]) + forceFaceVal*directionForB ) ;
@@ -279,16 +260,12 @@ void OrigamiForceField<DataTypes>::addFaceConstraints(
         alphaC0 = M_PI_2;
 
     forceFaceVal = -kFace*(alphaC-alphaC0);
-//    msg_warning() << "++++++++++++++++++++++++++++ forceFaceVal: " << forceFaceVal;
     directionForA = cross(normal,-ac)/dot(ac,ac);
     directionForB = cross(normal,-bc)/dot(bc,bc);
     if (direct)
         directionForC = cross(normal,-ac)/dot(ac,ac) - cross(normal,-bc)/dot(bc,bc);
     else
         directionForC = -cross(normal,-ac)/dot(ac,ac) + cross(normal,-bc)/dot(bc,bc);
-//    msg_warning() << "directions: " << directionForA;
-//    msg_warning() << "directions: " << directionForB;
-//    msg_warning() << "directions: " << directionForC;
     DataTypes::setDPos( f1[a], DataTypes::getDPos(f1[a]) + forceFaceVal*directionForA ) ;
     DataTypes::setDPos( f1[b], DataTypes::getDPos(f1[b]) + forceFaceVal*directionForB ) ;
     DataTypes::setDPos( f1[c], DataTypes::getDPos(f1[c]) + forceFaceVal*directionForC ) ;
@@ -305,8 +282,6 @@ void OrigamiForceField<DataTypes>::createSpringsFromInputs()
             << " . No springs will be created";
         return;
     }
-
-    msg_warning() << "createSpringsFromInputs createSpringsFromInputs createSpringsFromInputs createSpringsFromInputs createSpringsFromInputs";
 
     type::vector<Spring>& _springs = *this->springs.beginEdit();
     _springs.clear();
@@ -336,13 +311,11 @@ void OrigamiForceField<DataTypes>::addSpringForce(
         sofa::Index i,
         const OrigamiEdge& spring)
 {
-    //    this->cpt_addForce++;
     sofa::Index a = spring.m1;
     sofa::Index b = spring.m2;
     sofa::Index leftNode = spring.m3;
     sofa::Index rightNode = spring.m4;
     Real kcrease = 200;
-
     /// Get the positional part out of the dofs.
     typename DataTypes::CPos u = DataTypes::getCPos(p2[b])-DataTypes::getCPos(p1[a]);
     Real d = u.norm();
@@ -363,30 +336,16 @@ void OrigamiForceField<DataTypes>::addSpringForce(
             typename DataTypes::CPos toRightNode2 = DataTypes::getCPos(p1[rightNode])-DataTypes::getCPos(p1[b]);
             typename DataTypes::CPos normalRightTriangle=cross(toRightNode,toRightNode2);
             normalRightTriangle = normalRightTriangle/normalRightTriangle.norm();
-            msg_warning() << "normalRightTriangle " << normalRightTriangle;
             toRightNode = toRightNode - u*dot(toRightNode,u);
 
             typename DataTypes::CPos toLeftNode = DataTypes::getCPos(p1[leftNode])-DataTypes::getCPos(p1[a]);
             typename DataTypes::CPos toLeftNode2 = DataTypes::getCPos(p1[leftNode])-DataTypes::getCPos(p1[b]);
             typename DataTypes::CPos normalLeftTriangle=cross(toLeftNode,toLeftNode2);
-            msg_warning() << "normalLeftTriangle.norm() " << normalLeftTriangle.norm();
             normalLeftTriangle = -normalLeftTriangle/normalLeftTriangle.norm();
-            msg_warning() << "normalLeftTriangle " << normalLeftTriangle;
-            msg_warning() << "toLeftNode " << toLeftNode;
-            msg_warning() << "toLeftNode2 " << toLeftNode2;
             toLeftNode = toLeftNode - u*dot(toLeftNode,u);
 
-            msg_warning() << "distanceRight " << toRightNode.norm();
-            msg_warning() << "distanceLeft " << toLeftNode.norm();
             Real theta = acos( std::min(dot(toRightNode,toLeftNode)/(toRightNode.norm()*toLeftNode.norm()),1.0 ));
             Real thetaFromNormals = acos( std::min(dot(normalRightTriangle,normalLeftTriangle)/(normalRightTriangle.norm()*normalLeftTriangle.norm()) ,1.0) );
-            msg_warning() << "theta " << theta << " Theta from normals" << thetaFromNormals;
-            msg_warning() << "dot(normalRightTriangle,normalLeftTriangle) " << dot(normalRightTriangle,normalLeftTriangle);
-            msg_warning() << "(normalRightTriangle.norm()*normalLeftTriangle.norm()) " << (normalRightTriangle.norm()*normalLeftTriangle.norm());
-            msg_warning() << " dot(normalRightTriangle,normalLeftTriangle)/(normalRightTriangle.norm()*normalLeftTriangle.norm())  " <<  dot(normalRightTriangle,normalLeftTriangle)/(normalRightTriangle.norm()*normalLeftTriangle.norm()) ;
-            msg_warning() << "acos(1)" << std::min(1.0, 1.1);
-//            msg_warning() << "normalLeftTriangle.norm() " << normalLeftTriangle.norm();
-//            msg_warning() << "normalLeftTriangle.norm() " << normalLeftTriangle.norm();
             if (spring.foldType == -1)
             {
                 if (dot(cross(normalRightTriangle,normalLeftTriangle),u) < 0)
@@ -413,7 +372,7 @@ void OrigamiForceField<DataTypes>::addSpringForce(
                 theta = angleTarget.getValue();
             typename DataTypes::CPos normalToNormals = cross(normalRightTriangle,normalLeftTriangle);
 
-            msg_warning() << "theta " << theta << " Theta from normals" << thetaFromNormals;
+//            msg_warning() << "theta " << theta << " Theta from normals" << thetaFromNormals;
 
             typename DataTypes::CPos v31 = DataTypes::getCPos(p1[rightNode])-DataTypes::getCPos(p1[a]);
             typename DataTypes::CPos v41 = DataTypes::getCPos(p1[rightNode])-DataTypes::getCPos(p1[b]);
@@ -424,7 +383,6 @@ void OrigamiForceField<DataTypes>::addSpringForce(
             Real alphaRightUp = acos( dot(-u,v41)/(v41.norm()*u.norm()) );
             Real alphaLeftDown = acos( dot(u,v32)/(v32.norm()*u.norm()) );
             Real alphaLeftUp = acos( dot(v42,-u)/(v42.norm()*u.norm()) );
-            msg_warning() << "the alphas: " << alphaRightDown << " " << alphaRightUp << " " << alphaLeftDown << " " << alphaLeftUp;
 
             typename DataTypes::CPos ab = DataTypes::getCPos(p1[b])-DataTypes::getCPos(p1[a]);
             Real forceCreaseVal;
@@ -434,7 +392,6 @@ void OrigamiForceField<DataTypes>::addSpringForce(
                 forceCreaseVal = kcrease*spring.initpos*(theta - angleTarget.getValue());
             else
                 forceCreaseVal = 0.0;
-            msg_warning() << "+++++++++++++++++++++++ crease force:" << forceCreaseVal << " Norm of ab: " << ab.norm();
             typename DataTypes::DPos forceRightCrease = forceCreaseVal* normalRightTriangle/toRightNode.norm();
             typename DataTypes::DPos forceLeftCrease = forceCreaseVal* normalLeftTriangle/toLeftNode.norm();
             typename DataTypes::DPos forceCreaseA = forceCreaseVal* ( -tan(M_PI_2 - alphaRightUp) / (tan(M_PI_2 -alphaRightDown) + tan(M_PI_2 -alphaRightUp)) ) * normalRightTriangle/toRightNode.norm() + forceCreaseVal* ( -tan(M_PI_2 - alphaLeftUp) / (tan(M_PI_2 -alphaLeftDown) + tan(M_PI_2 -alphaLeftUp)) ) * normalLeftTriangle/toLeftNode.norm();
@@ -529,9 +486,7 @@ void OrigamiForceField<DataTypes>::addForce(const core::MechanicalParams* /*mpar
     }
     for (unsigned int i=0; i<Triangles.size(); i++)
     {
-//        msg_warning() << "adding force for triangle :" << i;
         this->addFaceConstraints(this->m_potentialEnergy,f1,x1,v1,f2,x2,v2, i, Triangles[i]);
-//        msg_warning() << "Triangles:" << Triangles[i][0]<< Triangles[i][1]<< Triangles[i][2];
     }
     data_f1.endEdit();
     data_f2.endEdit();
@@ -705,19 +660,7 @@ void OrigamiForceField<DataTypes>::draw(const core::visual::VisualParams* vparam
                 points[3].push_back(point2);
             }
         }
-//        points[4].push_back(point3);
-//        points[4].push_back(point4);
 
-
-//        if (springs[i].m3 != -1){
-//            colorVector.push_back(sofa::defaulttype::RGBAColor(0,1,0,1));
-//            vertices.push_back(sofa::defaulttype::Vector3(point1));
-//            colorVector.push_back(sofa::defaulttype::RGBAColor(0,0.5,0.5,1));
-//            vertices.push_back(sofa::defaulttype::Vector3(point2));
-//            colorVector.push_back(sofa::defaulttype::RGBAColor(0,0,1,1));
-//            vertices.push_back(sofa::defaulttype::Vector3(point3));
-
-//        }
         if (springs[i].m4 != -1){
             colorVector.push_back(sofa::type::RGBAColor(0,1,0,1));
             vertices.push_back(sofa::type::Vector3(point1));

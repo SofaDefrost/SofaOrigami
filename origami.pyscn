@@ -1,0 +1,43 @@
+import Sofa
+import Sofa.Core
+import os
+import math
+import json
+import numpy
+from python.readFoldFormat  import readFold
+path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
+
+# Units: mm, kg, s.     Pressure in kPa = k (kg/(m.s^2)) = k (g/(mm.s^2) =  kg/(mm.s^2)
+
+def createScene(rootNode):
+    
+                rootNode.addObject('RequiredPlugin', pluginName='SofaOrigami')
+                rootNode.addObject('RequiredPlugin', pluginName='SofaDeformable')
+                rootNode.addObject('RequiredPlugin', pluginName='SofaImplicitOdeSolver')
+                rootNode.addObject('RequiredPlugin', pluginName='SofaMiscFem')
+                rootNode.addObject('RequiredPlugin', pluginName='SofaOpenglVisual')
+
+                rootNode.dt=0.0005
+                rootNode.gravity=[0, 0, -9810]
+                rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels hideBoundingCollisionModels showForceFields showInteractionForceFields hideWireframe')
+
+                #read fold file
+                origamiEdges, triangles, positions = readFold('reschTriTessellation _ 0PercentFolded.fold')                        
+                
+                model = rootNode.addChild('model')
+                model.addObject('EulerImplicitSolver',rayleighStiffness=0.9, rayleighMass=0.9)
+                model.addObject('CGLinearSolver',iterations='250000', tolerance=1.0e-15, threshold=1.0e-15, warmStart=False)
+                model.addObject('TriangleSetTopologyContainer', name='topo', position=positions, triangles=triangles)
+                model.addObject('MechanicalObject', src='@topo', template='Vec3d')
+                model.addObject('OrigamiForceField', template="Vec3d", stiffness = 500, origamiSpring=origamiEdges, drawMode=1, angleTarget=math.pi/3, showArrowSize=0.2)
+                model.addObject('TriangleFEMForceField', template='Vec3d', name='FEM', method='large', poissonRatio='0.49',  youngModulus='50')
+                model.addObject('UniformMass', totalMass=0.1)
+                model.addObject('RestShapeSpringsForceField', stiffness=100, points=[0,13,20,33])
+                                
+                visu = model.addChild('bidon')
+                visu.addObject('TriangleSetTopologyContainer', name='topo', position=positions, triangles=triangles)
+                visu.addObject('OglModel',src='@topo',template="Vec3d", color='0.7 0.7 0.7 0.6')
+                visu.addObject('IdentityMapping')
+                
+                
+                return rootNode
