@@ -15,6 +15,8 @@ set(HEADER_FILES
     ${SOFAORIGAMI_SRC_DIR}/config.h.in
     ${SOFAORIGAMI_SRC_DIR}/OrigamiForceField.h
     ${SOFAORIGAMI_SRC_DIR}/OrigamiForceField.inl
+    ${SOFAORIGAMI_SRC_DIR}/RotationalSpringForceField.h
+    ${SOFAORIGAMI_SRC_DIR}/RotationalSpringForceField.inl
     ${SOFAORIGAMI_SRC_DIR}/MyVisualModel.h
     ${SOFAORIGAMI_SRC_DIR}/MyBehaviorModel.h
     )
@@ -23,6 +25,7 @@ set(HEADER_FILES_TO_MOC
 set(SOURCE_FILES
     ${SOFAORIGAMI_SRC_DIR}/initSofaOrigami.cpp
     ${SOFAORIGAMI_SRC_DIR}/OrigamiForceField.cpp
+    ${SOFAORIGAMI_SRC_DIR}/RotationalSpringForceField.cpp
     ${SOFAORIGAMI_SRC_DIR}/MyVisualModel.cpp
     ${SOFAORIGAMI_SRC_DIR}/MyBehaviorModel.cpp
     )

@@ -62,4 +62,4 @@ def readFold(filename):
                         else:
                             origamiEdges = origamiEdges + edges[i] + [nodeDirect,nodeIndirect] + [-1]+ [500,5] + [numpy.linalg.norm([p1[i]-p2[i] for i in range(3)])] 
                         break
-    return origamiEdges, triangles, positions                                
+    return origamiEdges, triangles,edges,edgesAss, positions                                
