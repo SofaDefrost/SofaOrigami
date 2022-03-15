@@ -98,7 +98,6 @@ protected:
 public:
 
     void init() override;
-    void reinit() override;
     void addForce(const core::MechanicalParams* mparams, DataVecDeriv& f, const DataVecCoord& x, const DataVecDeriv& v) override;
     void addDForce(const core::MechanicalParams* mparams, DataVecDeriv& df, const DataVecDeriv& dx) override;
     SReal getPotentialEnergy(const core::MechanicalParams* /*mparams*/, const DataVecCoord&  /* x */) const override
@@ -113,7 +112,7 @@ public:
     type::vector<type::vector<int>> adjacentVertices;
     Data<std::string> f_method; ///< Choice of method: 0 for small, 1 for large displacements
     Data<Real> f_poisson;       ///< Poisson ratio of the material
-    Data<Real> f_young;         ///< Young modulus of the material
+    Data<Real> f_kcrease;         ///< Young modulus of the material
     Data<Real> f_thickness;     ///< Thickness of the elements
 //    Data<Real> f_damping;       ///< Damping coefficient of the material, currently unused
     Data<bool> f_planeStrain; ///< compute material stiffness corresponding to the plane strain assumption, or to the plane stress otherwise.
@@ -128,7 +127,7 @@ public:
 
     Real getPoisson() { return f_poisson.getValue(); }
     void setPoisson(Real val);
-    Real getYoung() { return f_young.getValue(); }
+    Real getYoung() { return f_kcrease.getValue(); }
 //    Real getDamping() { return f_damping.getValue(); }
 //    void setDamping(Real val) { f_damping.setValue(val); }
     void setYoung(Real val);
@@ -147,29 +146,9 @@ public:
 
 protected :
 
-    /// f += Kx where K is the stiffness matrix and x a displacement
-    virtual void applyStiffness( VecCoord& f, Real h, const VecCoord& x, const SReal &kFactor );
-    void computeStrainDisplacement( StrainDisplacement &J, Coord a, Coord b, Coord c);
-    void computeMaterialStiffnesses();
-    void computeForce( Displacement &F, const Displacement &Depl, const MaterialStiffness &K, const StrainDisplacement &J );
-
-    ////////////// small displacements method
-    void initSmall();
-    void accumulateForceSmall( VecCoord& f, const VecCoord & p, Index elementIndex, bool implicit = false );
-//    void accumulateDampingSmall( VecCoord& f, Index elementIndex );
-    void applyStiffnessSmall( VecCoord& f, Real h, const VecCoord& x, const SReal &kFactor );
-
     ////////////// large displacements method
     sofa::type::vector< type::fixed_array <Coord, 3> > _rotatedInitialElements;   ///< The initials positions in its frame
     sofa::type::vector< Transformation > _rotations;
-    void initLarge();
-    void computeRotationLarge( Transformation &r, const VecCoord &p, const Index &a, const Index &b, const Index &c);
-    void accumulateForceLarge( VecCoord& f, const VecCoord & p, Index elementIndex, bool implicit=false );
-//    void accumulateDampingLarge( VecCoord& f, Index elementIndex );
-    void applyStiffnessLarge( VecCoord& f, Real h, const VecCoord& x, const SReal &kFactor );
-
-    //// stiffness matrix assembly
-    void computeElementStiffnessMatrix( StiffnessMatrix& S, StiffnessMatrix& SR, const MaterialStiffness &K, const StrainDisplacement &J, const Transformation& Rot );
     void addKToMatrix(sofa::defaulttype::BaseMatrix *mat, SReal k, unsigned int &offset) override; // compute and add all the element stiffnesses to the global stiffness matrix
     type::Mat3x3 diamond(Coord a, Coord b);
     type::Mat<3, 3, Real> InvalidTransform;
