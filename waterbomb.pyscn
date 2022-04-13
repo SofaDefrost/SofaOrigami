@@ -1,0 +1,110 @@
+import Sofa
+import Sofa.Core
+import os
+import math
+import json
+import numpy
+from python.readFoldFormat  import readFold
+from Sofa.constants import *
+path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
+
+# Units: mm, kg, s.     Pressure in kPa = k (kg/(m.s^2)) = k (g/(mm.s^2) =  kg/(mm.s^2)
+
+class cornersController(Sofa.Core.Controller):
+    def __init__(self, *a, **kw):
+        Sofa.Core.Controller.__init__(self, *a, **kw)
+        self.node = kw["node"]
+        self.theta = 0.0
+        return
+            
+    def onKeypressedEvent(self, e):
+        print("toto")
+        if e["key"] == Sofa.constants.Key.plus: 
+            self.theta = self.theta + 0.05 
+            with self.node.corners.position.writeable() as positions:
+                positions[0][0] = -90*math.cos(self.theta)
+                positions[0][1] = -90*math.sin(self.theta)
+                positions[3][0] = -90*math.cos(self.theta)
+                positions[3][1] = -90*math.sin(self.theta)
+        if e["key"] == Sofa.constants.Key.minus: 
+            with self.node.corners.position.writeable() as positions:
+                positions[0][2] = positions[0][2] - 0.5
+                positions[1][2] = positions[1][2] - 0.5
+                positions[2][2] = positions[2][2] + 0.5
+                positions[3][2] = positions[3][2] + 0.5
+        return
+    
+class pushDownController(Sofa.Core.Controller):
+    def __init__(self, *a, **kw):
+        Sofa.Core.Controller.__init__(self, *a, **kw)
+        self.node = kw["node"]
+        self.topMiddle = [0,0,0]
+        with self.node.top.position.writeable() as positions:
+            for i in range(11):
+                self.topMiddle[0] = self.topMiddle[0] + positions[i][0]/11
+                self.topMiddle[1] = self.topMiddle[1] + positions[i][1]/11
+                self.topMiddle[2] = self.topMiddle[2] + positions[i][2]/11
+
+        return
+            
+    def onKeypressedEvent(self, e):
+        print("toto")
+        if e["key"] == Sofa.constants.Key.downarrow: 
+            with self.node.top.position.writeable() as positions:
+                for i in range(11):
+                    positions[i][2] = positions[i][2] - 0.5
+        if e["key"] == Sofa.constants.Key.uparrow: 
+            with self.node.top.position.writeable() as positions:
+                for i in range(11):
+                    positions[i][2] = positions[i][2] + 0.5            
+        if e["key"] == Sofa.constants.Key.space: 
+            with self.node.top.position.writeable() as positions:
+                for i in range(11):
+                    positions[i][0] = positions[i][0] + ( self.topMiddle[0] - positions[i][0] )*0.05
+                    positions[i][1] = positions[i][1] + ( self.topMiddle[1] - positions[i][1] )*0.05
+                    positions[i][2] = positions[i][2] + ( self.topMiddle[2] - positions[i][2] )*0.05
+        return
+    
+
+def createScene(rootNode):
+    
+                rootNode.addObject('RequiredPlugin', pluginName='SofaOrigami')
+                rootNode.addObject('RequiredPlugin', pluginName='SofaDeformable')
+                rootNode.addObject('RequiredPlugin', pluginName='SofaImplicitOdeSolver')
+                rootNode.addObject('RequiredPlugin', pluginName='SofaMiscFem')
+                rootNode.addObject('RequiredPlugin', pluginName='SofaOpenglVisual')
+                rootNode.addObject('RequiredPlugin', pluginName='SofaPython3')
+                #rootNode.addObject('BackgroundSetting')
+                rootNode.dt=0.001
+                rootNode.gravity=[0 , 0 ,-9810]
+                #rootNode.gravity=[0 , -9810, 0]
+                rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels hideBoundingCollisionModels showForceFields showInteractionForceFields hideWireframe')
+
+                #read fold file
+                origamiEdges, triangles,edges,edgesAss, positions = readFold('waterbomb _ 0PercentFolded.fold')
+                waterbombPos = [89.9584, 0.461094, 37.4234, 89.9198, 0.286988, 37.399, 89.8375, 0.296582, -14.1482, 89.8865, 0.468541, -14.1239, 89.5802, 0.481473, 19.8898, 89.5686, 0.430547, 19.8883, 89.5751, 0.491235, 3.33795, 89.5615, 0.441323, 3.33643, 89.5797, 0.497282, 2.43315, 89.5657, 0.449303, 2.42456, 89.5791, 0.472389, 20.8364, 89.5689, 0.423799, 20.8277, 92.731, 4.68226, -14.1651, 92.8806, 4.79744, 37.3989, 90.8583, 2.95795, -6.28856, 90.8847, 2.96322, 29.5807, 94.745, 6.36595, -6.31242, 94.8849, 6.45182, 29.5357, 89.5256, -2.33912, -6.30486, 89.5596, -2.37395, 29.5638, 105.389, -8.63612, -6.31959, 105.587, -8.74868, 29.405, 103.106, -9.92212, -14.1718, 103.362, -10.0974, 37.2636, 100.721, -10.9722, -6.31363, 100.885, -11.1084, 29.4287, 98.1007, -10.8183, -14.1642, 98.3024, -11.0142, 37.2934, 95.5143, -10.4338, -6.30924, 95.6356, -10.5781, 29.4681, 93.3867, -8.9046, -14.1621, 93.5284, -9.09611, 37.3363, 91.3639, -7.18968, -6.32085, 91.437, -7.31875, 29.5272, 90.3706, -4.76056, -14.1742, 90.4543, -4.91211, 37.3898, 106.833, -6.46019, -14.1755, 107.13, -6.5939, 37.2484, 108.039, -4.14287, -6.32023, 108.26, -4.21997, 29.3986, 108.064, -1.52326, -14.1729, 108.381, -1.60096, 37.251, 107.809, 1.06841, -6.31434, 108.037, 1.03384, 29.4102, 106.397, 3.28146, -14.1648, 106.71, 3.26654, 37.2706, 104.784, 5.32147, -6.30483, 105.003, 5.33252, 29.4375, 102.398, 6.41885, -14.1549, 102.681, 6.46367, 37.3026, 99.9322, 7.28763, -6.29962, 100.125, 7.34201, 29.4776, 97.338, 6.93568, -14.153, 97.5657, 7.02875, 37.3454, 97.2899, 7.38657, 2.39756, 106.786, 3.48608, 2.38438, 107.217, -6.67184, 2.37339, 98.1095, -11.2691, 2.3853, 89.9365, -4.92739, 2.37691, 92.4207, 5.06119, 3.32505, 97.3776, 7.43521, 19.8717, 102.644, 6.80533, 3.29136, 106.91, 3.48038, 19.8248, 108.513, -1.53951, 3.25724, 107.331, -6.72132, 19.8077, 103.363, -10.3041, 3.26394, 98.1886, -11.351, 19.8379, 93.1386, -9.30325, 3.30313, 89.9388, -4.9835, 19.8872, 92.4513, 5.08896, 19.8919, 97.3141, 7.4021, 3.31134, 102.733, 6.82627, 19.847, 106.806, 3.48049, 3.27094, 108.621, -1.56354, 19.8103, 107.231, -6.67558, 3.2546, 103.447, -10.3654, 19.8178, 98.1257, -11.2828, 3.28229, 93.179, -9.36804, 19.8635, 89.9185, -4.93219, 3.32042, 92.4754, 5.08422, 20.8472, 102.729, 6.82058, 20.7513, 108.617, -1.56365, 20.6984, 103.441, -10.3639, 20.7113, 93.1784, -9.35543, 20.7855, 92.4319, 5.04678, 2.38509, 102.619, 6.80302, 2.39477, 108.499, -1.53328, 2.37609, 103.346, -10.2977, 2.37719, 93.1292, -9.28112, 2.38842, 90.749, 2.83876, -5.41395, 97.5857, -1.60064, 2.96813, 97.9036, -1.12306, 2.96801, 98.6918, -0.745517, 2.9711, 94.6931, 6.63967, 11.1274, 99.9743, 7.30251, -5.43376, 99.4862, -0.832757, 2.96561, 100.043, -1.27587, 2.9584, 105.035, 5.48419, 11.1067, 107.837, 1.05392, -5.45922, 100.252, -1.88561, 2.95339, 100.102, -2.4863, 2.95229, 108.335, -4.22676, 11.0855, 105.419, -8.6381, -5.46426, 99.6307, -2.9272, 2.9551, 98.9288, -3.05677, 2.96046, 100.856, -11.2449, 11.0982, 95.5393, -10.4648, -5.44298, 98.185, -2.75985, 2.96445, 97.6662, -2.05531, 2.96098, 91.185, -7.40072, 11.1201, 89.4858, -2.1777, -5.41863, 97.6112, -1.49355, 2.96369, 90.6254, 3.02947, 11.1437, 94.787, 6.40785, -5.43334, 100.057, 7.54531, 11.1217, 104.822, 5.3165, -5.4463, 108.113, 1.10386, 11.0926, 108.06, -4.14918, -5.46596, 105.632, -8.82666, 11.0875, 100.755, -10.987, -5.45473, 95.4936, -10.7231, 11.1124, 91.3756, -7.23738, -5.44088, 89.2929, -2.29711, 11.1402, 90.6256, 3.03098, 12.0879, 97.5931, -1.59951, 20.2555, 97.9256, -1.10231, 20.2523, 98.7431, -0.713341, 20.2354, 94.8979, 6.47863, 28.6385, 100.067, 7.54553, 12.0416, 99.5673, -0.805909, 20.2267, 100.147, -1.26853, 20.2225, 105.026, 5.33272, 28.5651, 108.119, 1.10028, 11.9879, 100.364, -1.90559, 20.2205, 100.207, -2.53298, 20.2193, 108.271, -4.22171, 28.531, 105.637, -8.82909, 11.9828, 99.7161, -2.99224, 20.2192, 98.9884, -3.12719, 20.2215, 100.908, -11.1181, 28.5567, 95.4989, -10.7275, 12.0324, 98.2193, -2.82135, 20.2288, 97.6819, -2.09422, 20.2453, 91.4415, -7.35724, 28.631, 89.2932, -2.30636, 12.0843, 97.6214, -1.4908, 20.2512, 90.7988, 2.88584, 28.651, 94.7018, 6.6435, 12.0777, 100.142, 7.35643, 28.5975, 105.044, 5.48138, 12.0108, 108.054, 1.02522, 28.5415, 108.34, -4.2297, 11.9775, 105.607, -8.74669, 28.5365, 100.861, -11.2479, 12.0024, 95.6489, -10.6007, 28.5884, 91.1896, -7.40739, 12.0704, 89.5198, -2.26921, 28.6462, 97.3764, 7.42479, 20.7946, 106.905, 3.47877, 20.7185, 107.327, -6.72233, 20.6957, 98.1834, -11.3442, 20.7419, 89.961, -4.9883, 20.839, 97.7693, -1.58098, 28.9016, 98.0885, -2.44168, 28.8612, 98.7048, -2.91874, 28.8495, 99.4009, -2.98876, 28.8494, 99.9586, -2.70891, 28.8533, 100.251, -2.21394, 28.8558, 100.226, -1.63876, 28.8553, 99.8648, -1.12681, 28.8537, 99.2144, -0.858826, 28.8559, 98.4432, -0.989194, 28.8705, 97.7585, -1.59543, 28.9167, 97.7368, -1.52206, -5.69098, 98.0365, -2.34018, -5.66272, 98.6102, -2.78734, -5.66276, 99.2561, -2.85367, -5.67164, 99.7689, -2.59696, -5.68024, 100.034, -2.147, -5.68307, 100.011, -1.62616, -5.67821, 99.6808, -1.16122, -5.66743, 99.0831, -0.918252, -5.65634, 98.3696, -1.04355, -5.65331, 97.7181, -1.62793, -5.67565, 97.5407, -1.71319, 11.6059, 97.8325, -2.50414, 11.6002, 98.5396, -3.04844, 11.5937, 99.3388, -3.12723, 11.5887, 99.9813, -2.80304, 11.586, 100.321, -2.22512, 11.5859, 100.293, -1.55529, 11.5882, 99.8787, -0.966965, 11.5929, 99.1365, -0.660643, 11.5993, 98.2564, -0.808371, 11.6061, 97.6267, -1.36915, 11.6099]
+                model = rootNode.addChild('model')
+                model.addObject('EulerImplicitSolver',rayleighStiffness=0.01, rayleighMass=0.01)
+                model.addObject('SparseLDLSolver')
+                model.addObject('TriangleSetTopologyContainer', name='topo', position=waterbombPos,edges=edges, triangles=triangles)
+                model.addObject('MechanicalObject',name="MO", src='@topo', template='Vec3d')
+                model.addObject('MeshSpringForceField', name="Springs", trianglesStiffness="500", trianglesDamping="0", drawSpringSize=0) 
+                model.addObject('TriangleFEMForceField', template='Vec3d', name='FEM', method='large', poissonRatio='0.4',  youngModulus='1900')
+                model.addObject('RotationalSpringForceField', template='Vec3d', name='FEM', method='large', edgesAssignment=edgesAss, angleTarget = 0.45, poissonRatio='0.49',  kcrease=100)
+                model.addObject('UniformMass', totalMass=0.5)
+                model.addObject('RestShapeSpringsForceField', stiffness=500,external_rest_shape="@../actuators/top", points=[0,13,23,27,31,35,37,41,45,49,53],drawSpring=False)
+                model.addObject('RestShapeSpringsForceField',name="base", stiffness=500, points=[3,12,22,26,30,34,36,40,44,48,52], drawSpring=False)
+                model.addObject('StiffSpringForceField', stiffness=500,object1="@MO",object2="@MO",  indices1=[0,3,4,6,8,10, 90,124 ],    indices2=[1,2,5,7,9,11, 111,145 ],lengths= [0]*8, drawMode = 0, showArrowSize=0.0, damping=0)
+                visu = model.addChild('bidon')
+                visu.addObject('TriangleSetTopologyContainer', name='topo', position=positions, triangles=triangles)
+                visu.addObject('OglModel',src='@topo',template="Vec3d", color='1 1 1 0.7')
+                visu.addObject('IdentityMapping')
+                
+                actuators = rootNode.addChild('actuators')
+                
+                #actuators.addObject('MechanicalObject',name="corners", position=[[-92.225, 0.0, 53.1636],[89.8483, 0.0, 52.9701],[89.7604, 0.0, -29.7904],[-92.3129, 0.0, -29.5968]], template='Vec3d')
+                actuators.addObject('MechanicalObject',name="top", position=[[89.9584, 0.461094, 37.4234],[92.8806, 4.79744, 37.3989],[103.362, -10.0974, 37.2636],[98.3024, -11.0142, 37.2934],[93.5284, -9.09611, 37.3363],[90.4543, -4.91211, 37.3898],[107.13, -6.5939, 37.2484],[108.381, -1.60096, 37.251],[106.71, 3.26654, 37.2706],[102.681, 6.46367, 37.3026],[97.5657, 7.02875, 37.3454]], template='Vec3d')
+                actuators.addObject(pushDownController(name="MyAmazingController", node=actuators))
+                #actuators.addObject(cornersController(name="MyAmazingController", node=actuators))
+                
+                return rootNode

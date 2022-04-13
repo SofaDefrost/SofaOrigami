@@ -5,9 +5,66 @@ import math
 import json
 import numpy
 from python.readFoldFormat  import readFold
+from Sofa.constants import *
 path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 
 # Units: mm, kg, s.     Pressure in kPa = k (kg/(m.s^2)) = k (g/(mm.s^2) =  kg/(mm.s^2)
+
+class cornersController(Sofa.Core.Controller):
+    def __init__(self, *a, **kw):
+        Sofa.Core.Controller.__init__(self, *a, **kw)
+        self.node = kw["node"]
+        self.theta = 0.0
+        return
+            
+    def onKeypressedEvent(self, e):
+        print("toto")
+        if e["key"] == Sofa.constants.Key.plus: 
+            self.theta = self.theta + 0.05 
+            with self.node.corners.position.writeable() as positions:
+                positions[0][0] = -90*math.cos(self.theta)
+                positions[0][1] = -90*math.sin(self.theta)
+                positions[3][0] = -90*math.cos(self.theta)
+                positions[3][1] = -90*math.sin(self.theta)
+        if e["key"] == Sofa.constants.Key.minus: 
+            with self.node.corners.position.writeable() as positions:
+                positions[0][2] = positions[0][2] - 0.5
+                positions[1][2] = positions[1][2] - 0.5
+                positions[2][2] = positions[2][2] + 0.5
+                positions[3][2] = positions[3][2] + 0.5
+        return
+    
+class pushDownController(Sofa.Core.Controller):
+    def __init__(self, *a, **kw):
+        Sofa.Core.Controller.__init__(self, *a, **kw)
+        self.node = kw["node"]
+        self.topMiddle = [0,0,0]
+        with self.node.top.position.writeable() as positions:
+            for i in range(11):
+                self.topMiddle[0] = self.topMiddle[0] + positions[i][0]/11
+                self.topMiddle[1] = self.topMiddle[1] + positions[i][1]/11
+                self.topMiddle[2] = self.topMiddle[2] + positions[i][2]/11
+
+        return
+            
+    def onKeypressedEvent(self, e):
+        print("toto")
+        if e["key"] == Sofa.constants.Key.downarrow: 
+            with self.node.top.position.writeable() as positions:
+                for i in range(11):
+                    positions[i][2] = positions[i][2] - 0.5
+        if e["key"] == Sofa.constants.Key.uparrow: 
+            with self.node.top.position.writeable() as positions:
+                for i in range(11):
+                    positions[i][2] = positions[i][2] + 0.5            
+        if e["key"] == Sofa.constants.Key.space: 
+            with self.node.top.position.writeable() as positions:
+                for i in range(11):
+                    positions[i][0] = positions[i][0] + ( self.topMiddle[0] - positions[i][0] )*0.05
+                    positions[i][1] = positions[i][1] + ( self.topMiddle[1] - positions[i][1] )*0.05
+                    positions[i][2] = positions[i][2] + ( self.topMiddle[2] - positions[i][2] )*0.05
+        return
+    
 
 def createScene(rootNode):
     
@@ -16,36 +73,32 @@ def createScene(rootNode):
                 rootNode.addObject('RequiredPlugin', pluginName='SofaImplicitOdeSolver')
                 rootNode.addObject('RequiredPlugin', pluginName='SofaMiscFem')
                 rootNode.addObject('RequiredPlugin', pluginName='SofaOpenglVisual')
+                rootNode.addObject('RequiredPlugin', pluginName='SofaPython3')
                 #rootNode.addObject('BackgroundSetting')
-                rootNode.dt=0.005
-                rootNode.gravity=[0 ,-9810 , 0]
+                rootNode.dt=0.001
+                rootNode.gravity=[0 , 0 ,-9810]
                 rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels hideBoundingCollisionModels showForceFields showInteractionForceFields hideWireframe')
 
                 #read fold file
-                #origamiEdges, triangles, edges,edgesAss,positions = readFold('reschTriTessellation _ 0PercentFolded.fold')    
-                origamiEdges, triangles,edges,edgesAss, positions = readFold('waterbomb _ 0PercentFolded.fold')
+                origamiEdges, triangles, edges,edgesAss,positions = readFold('reschTriTessellation _ 0PercentFolded.fold')    
+                #origamiEdges, triangles,edges,edgesAss, positions = readFold('waterbomb _ 0PercentFolded.fold')
                 #origamiEdges, triangles,edges,edgesAss, positions = readFold('waterbombBase _ 0PercentFolded.fold')
                 #origamiEdges, triangles,edges,edgesAss, positions = readFold('simplestFold.fold')
                 #origamiEdges, triangles,edges,edgesAss, positions = readFold('simple2Fold.fold')
                 #origamiEdges, triangles,edges,edgesAss, positions = readFold('frogBase _ 0PercentFolded.fold')
                 #origamiEdges, triangles,edges,edgesAss, positions = readFold('birdBase _ 0PercentFolded.fold')
                 model = rootNode.addChild('model')
-                model.addObject('EulerImplicitSolver',rayleighStiffness=0.05, rayleighMass=0.05)
+                model.addObject('EulerImplicitSolver',rayleighStiffness=0.01, rayleighMass=0.01)
                 model.addObject('SparseLDLSolver')
                 model.addObject('TriangleSetTopologyContainer', name='topo', position=positions,edges=edges, triangles=triangles)
-                model.addObject('MechanicalObject', src='@topo', template='Vec3d')
-                model.addObject('MeshSpringForceField', name="Springs", trianglesStiffness="1000", trianglesDamping="0") 
-                model.addObject('TriangleFEMForceField', template='Vec3d', name='FEM', method='large', poissonRatio='0.4',  youngModulus='500')
-                model.addObject('RotationalSpringForceField', template='Vec3d', name='FEM', method='large', edgesAssignment=edgesAss, angleTarget = math.pi-0.0, poissonRatio='0.49',  kcrease=100)
-                model.addObject('UniformMass', totalMass=0.05)
-                #model.addObject('RestShapeSpringsForceField', stiffness=100, points=[0,13,20,33])
-                #model.addObject('RestShapeSpringsForceField', stiffness=100, points=[2])
-                model.addObject('RestShapeSpringsForceField', stiffness=500, points=[0,1,2,3],drawSpring=True)
-                                
+                model.addObject('MechanicalObject',name="MO", src='@topo', template='Vec3d')
+                model.addObject('MeshSpringForceField', name="Springs", trianglesStiffness="2000", trianglesDamping="0", drawSpringSize=0) 
+                model.addObject('TriangleFEMForceField', template='Vec3d', name='FEM', method='large', poissonRatio='0.4',  youngModulus='5900')
+                model.addObject('RotationalSpringForceField', template='Vec3d', name='FEM', method='large', edgesAssignment=edgesAss, angleTarget = math.pi, poissonRatio='0.49',  kcrease=100)
+                model.addObject('UniformMass', totalMass=0.01)
+                model.addObject('RestShapeSpringsForceField', stiffness=50, points=[0,13,20,33])
                 visu = model.addChild('bidon')
                 visu.addObject('TriangleSetTopologyContainer', name='topo', position=positions, triangles=triangles)
-                visu.addObject('OglModel',src='@topo',template="Vec3d", color='0.7 0.7 0.7 0.6')
+                visu.addObject('OglModel',src='@topo',template="Vec3d", color='1 1 1 0.7')
                 visu.addObject('IdentityMapping')
-                
-                
                 return rootNode

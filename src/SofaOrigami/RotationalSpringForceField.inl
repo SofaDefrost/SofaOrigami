@@ -123,6 +123,8 @@ void RotationalSpringForceField<DataTypes>::init()
     edgeStiffness.resize(m_topology->getNbEdges());
     nodes.resize(m_topology->getNbEdges());
     forceCrease.resize(m_topology->getNbEdges());
+    roundCount.resize(m_topology->getNbEdges());
+    signTemp.resize(m_topology->getNbEdges());
     for (int i; i<m_topology->getNbEdges(); i++){
         int vertexDirect = -1, vertexIndirect = -1;
         auto trianglesAroundEdge = m_topology->getTrianglesAroundEdge(i);
@@ -170,6 +172,8 @@ void RotationalSpringForceField<DataTypes>::init()
         p1[1] = m_topology->getPY(edge[1]);
         p1[2] = m_topology->getPZ(edge[1]);
         edgeInitialLength[i] = norm(p1-p0);
+        signTemp[i] = 0;
+        roundCount[i] = 0;
     }
 
 //for (int i; i<m_topology->getNbEdges(); i++)
@@ -182,12 +186,87 @@ type::Mat3x3 RotationalSpringForceField<DataTypes>::diamond(Coord a, Coord b){
 }
 
 template <class DataTypes>
+void RotationalSpringForceField<DataTypes>::getRotationalStiffness(const Real theta,const int edgeNum, Real& M, Real& k){
+
+    auto edgesAssignment = d_edgesAssignment.getValue();
+    Real kcrease = f_kcrease.getValue();
+    bool linear = true;
+    Real theta1 = M_PI/2.0 ,theta0 = d_angleTarget.getValue(),theta2 = 3.0*M_PI/2.0;
+
+    if (edgesAssignment[edgeNum] == "V"){
+        if (linear){
+            M = -kcrease*edgeInitialLength[edgeNum]*(theta - theta0); // Resistance Moment
+            k = -kcrease*edgeInitialLength[edgeNum]; // tangent rotational stiffness = dM/dtheta
+        }
+        else
+        {
+            if (theta <= theta1){
+                Real phi = M_PI*(theta - theta1)/(2*theta1);
+                M = -kcrease*edgeInitialLength[edgeNum]*(theta1 - theta0) + (2*kcrease*theta1/M_PI) * tan(phi); // Resistance Moment
+                k = -kcrease*edgeInitialLength[edgeNum]/(cos(phi)*cos(phi));
+            }
+            else if (theta <= theta2){
+                M = -kcrease*edgeInitialLength[edgeNum]*(theta - theta0);
+                k = -kcrease*edgeInitialLength[edgeNum];
+            }
+            else  // theta >theta2
+            {
+                Real phi = M_PI*(theta - theta2)/(4*M_PI - 2*theta2);
+                M = -kcrease*edgeInitialLength[edgeNum]*(theta2 - theta0) + (2*kcrease*(2*M_PI - theta2)/M_PI) * tan(phi); // Resistance Moment
+                k = -kcrease*edgeInitialLength[edgeNum]/(cos(phi)*cos(phi));
+            }
+
+        }
+
+    } else if (edgesAssignment[edgeNum] == "M"){
+        if (linear){
+            M = -kcrease*edgeInitialLength[edgeNum]*(theta - (2*M_PI - theta0)); // Resistance Moment
+            k = -kcrease*edgeInitialLength[edgeNum]; // tangent rotational stiffness = dM/dtheta
+        }
+        else
+        {
+            if (theta <= theta1){
+                Real phi = M_PI*(theta - (2*M_PI - theta1))/(2*(2*M_PI - theta1));
+                M = -kcrease*edgeInitialLength[edgeNum]*(theta1 - theta0) + (2*kcrease*theta1/M_PI) * tan(phi); // Resistance Moment
+                k = -kcrease*edgeInitialLength[edgeNum]/(cos(phi)*cos(phi));
+            }
+            else if (theta <= theta2){
+                M = -kcrease*edgeInitialLength[edgeNum]*(theta - (2*M_PI - theta0));
+                k = -kcrease*edgeInitialLength[edgeNum];
+            }
+            else  // theta >theta2
+            {
+                Real phi = M_PI*(theta - (2*M_PI - theta2))/(4*M_PI - 2*(2*M_PI - theta2));
+                M = -kcrease*edgeInitialLength[edgeNum]*(theta2 - theta0) + (2*kcrease*(2*M_PI - theta2)/M_PI) * tan(phi); // Resistance Moment
+                k = -kcrease*edgeInitialLength[edgeNum]/(cos(phi)*cos(phi));
+            }
+
+        }
+    } else {
+        M = 0.0;
+        k = 0.0;
+    }
+
+}
+
+template <class DataTypes>
 void RotationalSpringForceField<DataTypes>::addForce(const core::MechanicalParams* /* mparams */, DataVecDeriv& f, const DataVecCoord& x, const DataVecDeriv& /* v */)
 {
     VecDeriv& f1 = *f.beginEdit();
     const VecCoord& positions = x.getValue();
 //    msg_warning() << "--------------------------------------------------------------------------";
-//    msg_warning() << positions;
+//    std::cout << "[" << positions[0][0] << ", " << positions[0][1] << ", " << positions[0][2] << "]";
+//    std::cout << "[" << positions[13][0] << ", " << positions[13][1] << ", " << positions[13][2] << "]";
+//    std::cout << "[" << positions[23][0] << ", " << positions[23][1] << ", " << positions[23][2] << "]";
+//    std::cout << "[" << positions[27][0] << ", " << positions[27][1] << ", " << positions[27][2] << "]";
+//    std::cout << "[" << positions[31][0] << ", " << positions[31][1] << ", " << positions[31][2] << "]";
+//    std::cout << "[" << positions[35][0] << ", " << positions[35][1] << ", " << positions[35][2] << "]";
+//    std::cout << "[" << positions[37][0] << ", " << positions[37][1] << ", " << positions[37][2] << "]";
+//    std::cout << "[" << positions[41][0] << ", " << positions[41][1] << ", " << positions[41][2] << "]";
+//    std::cout << "[" << positions[45][0] << ", " << positions[45][1] << ", " << positions[45][2] << "]";
+//    std::cout << "[" << positions[49][0] << ", " << positions[49][1] << ", " << positions[49][2] << "]";
+//    std::cout << "[" << positions[53][0] << ", " << positions[53][1] << ", " << positions[53][2] << "]\n" ;
+
 //    msg_warning() << "--------------------------------------------------------------------------";
     const VecCoord& x1 = x.getValue();
     f1.resize(positions.size());
@@ -226,13 +305,38 @@ void RotationalSpringForceField<DataTypes>::addForce(const core::MechanicalParam
             cosTheta = -1.0;
 
         Real theta = acos( cosTheta );
+//        msg_warning() << "¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨";
+//        if (edgesAssignment[edgeNum] == "M")
+//            msg_warning() << "theta Mountain original: " << theta << "angle target : " << 2*M_PI - d_angleTarget.getValue();
+//        else if (edgesAssignment[edgeNum] == "V")
+//            msg_warning() << "theta Valley original: " << theta << "angle target : " << d_angleTarget.getValue();
+
 //        msg_warning() << "cos theta : !!!!!!!!!!!!!!!! " << dot(m,n)/(norm(m)*norm(n));
         int signMdotRkl = 1;
         if (dot(m,rkl) != 0)
             signMdotRkl = (0 < dot(m,rkl)) - (dot(m,rkl)<0);
+        bool fromNeg2Pos = false,fromPos2Neg=false;
+        if ((signMdotRkl*signTemp[edgeNum] < 0) && (abs(theta - M_PI) > 0.01))
+            if (signMdotRkl > 0)
+                fromNeg2Pos = true;
+            else
+                fromPos2Neg = true;
 
+        signTemp[edgeNum] = signMdotRkl;
         theta = signMdotRkl * theta;
+        if (fromNeg2Pos)
+            roundCount[edgeNum] += 1;
+        else if (fromPos2Neg)
+            roundCount[edgeNum] -= 1;
+//        msg_warning() << "Updated roundCount[" << edgeNum << "]: " << roundCount[edgeNum];
+//        if (edgesAssignment[edgeNum] == "M")
+//            msg_warning() << "theta Mountain sign change: " << theta << "angle target : " << 2*M_PI - d_angleTarget.getValue();
+//        else if (edgesAssignment[edgeNum] == "V")
+//            msg_warning() << "theta Valley sign change: " << theta << "angle target : " << d_angleTarget.getValue();
+
+
         theta = theta - floor( theta/(2*M_PI))*2*M_PI; // Modulo 2PI
+        theta += roundCount[edgeNum]*2*M_PI;
         Deriv dTheta_xi = (norm(rkj)/dot(m,m))*m;
         Deriv dTheta_xl = -(norm(rkj)/dot(n,n))*n;
         Deriv dTheta_xj = (dot(rij,rkj)/dot(rkj,rkj) - 1)*dTheta_xi - (dot(rkl,rkj)/dot(rkj,rkj))*dTheta_xl;
@@ -245,21 +349,24 @@ void RotationalSpringForceField<DataTypes>::addForce(const core::MechanicalParam
 //        msg_warning() << "forces : !!!!!!!!!!!!!!!! " << fxj;
 //        msg_warning() << "forces : !!!!!!!!!!!!!!!! " << fxk;
 //        if (edgesAssignment[edgeNum] == "M")
-//            msg_warning() << "theta : " << theta << "angle target : " << d_angleTarget.getValue();
+//            msg_warning() << "theta Mountain: " << theta << "angle target : " << 2*M_PI - d_angleTarget.getValue();
 //        else if (edgesAssignment[edgeNum] == "V")
-//            msg_warning() << "theta : " << theta << "angle target : " << 2*M_PI - d_angleTarget.getValue();
+//            msg_warning() << "theta Valley : " << theta << "angle target : " << d_angleTarget.getValue();
 
-        if (edgesAssignment[edgeNum] == "V"){
-            forceCreaseVal = -kcrease*edgeInitialLength[edgeNum]*(theta - d_angleTarget.getValue());
-//            msg_warning() << "force detail:" << kcrease << " " << edgeInitialLength[edgeNum] << " " << (theta - d_angleTarget.getValue());
-            dForcecrease = -kcrease*edgeInitialLength[edgeNum];
-        } else if (edgesAssignment[edgeNum] == "M"){
-            forceCreaseVal = -kcrease*edgeInitialLength[edgeNum]*(theta - (2*M_PI - d_angleTarget.getValue()));
-            dForcecrease = -kcrease*edgeInitialLength[edgeNum];
-        } else {
-            forceCreaseVal = 0.0;
-            dForcecrease = 0.0;
-        }
+        getRotationalStiffness(theta, edgeNum, forceCreaseVal, dForcecrease);
+
+
+//        if (edgesAssignment[edgeNum] == "V"){
+//            forceCreaseVal = -kcrease*edgeInitialLength[edgeNum]*(theta - d_angleTarget.getValue());
+////            msg_warning() << "force detail:" << kcrease << " " << edgeInitialLength[edgeNum] << " " << (theta - d_angleTarget.getValue());
+//            dForcecrease = -kcrease*edgeInitialLength[edgeNum];
+//        } else if (edgesAssignment[edgeNum] == "M"){
+//            forceCreaseVal = -kcrease*edgeInitialLength[edgeNum]*(theta - (2*M_PI - d_angleTarget.getValue()));
+//            dForcecrease = -kcrease*edgeInitialLength[edgeNum];
+//        } else {
+//            forceCreaseVal = 0.0;
+//            dForcecrease = 0.0;
+//        }
 //        dForcecrease = 0.0;
         forceCrease[edgeNum] = forceCreaseVal;
 //        msg_warning() << "forceCreaseVal !!!!!!!!!!!!!!!!" << forceCreaseVal;
@@ -382,8 +489,8 @@ void RotationalSpringForceField<DataTypes>::draw(const core::visual::VisualParam
         vparams->drawTool()->setPolygonMode(0, true);
 
     std::vector<sofa::type::RGBAColor> colorVector;
-    std::vector<sofa::type::Vector3> vertices;
-
+    std::vector<sofa::type::Vector3> vertices, pointsValley, pointsMountain, pointsBorder;
+    auto edgesAssignment = d_edgesAssignment.getValue();
     const VecCoord& x = this->mstate->read(core::ConstVecCoordId::position())->getValue();
 
     typename VecElement::const_iterator it;
@@ -400,6 +507,27 @@ void RotationalSpringForceField<DataTypes>::draw(const core::visual::VisualParam
         colorVector.push_back(sofa::type::RGBAColor(0,0,1,1));
         vertices.push_back(sofa::type::Vector3(x[c]));
     }
+    for (int edgeNum=0; edgeNum < m_topology->getNbEdges(); edgeNum++)
+    {
+        auto edge = m_topology->getEdge(edgeNum);
+        if (edgesAssignment[edgeNum] == "M") {
+        pointsMountain.push_back(x[edge[0]]);
+        pointsMountain.push_back(x[edge[1]]);
+        }
+        else if (edgesAssignment[edgeNum] == "V") {
+            pointsValley.push_back(x[edge[0]]);
+            pointsValley.push_back(x[edge[1]]);
+        }
+        else
+        {
+            pointsBorder.push_back(x[edge[0]]);
+            pointsBorder.push_back(x[edge[1]]);
+        }
+    }
+    vparams->drawTool()->drawLines(pointsMountain,5.0,sofa::type::RGBAColor(0.5,0,0.5,1));
+    vparams->drawTool()->drawLines(pointsValley,5.0,sofa::type::RGBAColor(0.5,0.5,0.5,1));
+    vparams->drawTool()->drawLines(pointsBorder,5.0,sofa::type::RGBAColor(0,0.5,0,1));
+
     vparams->drawTool()->drawTriangles(vertices,colorVector);
 
     vparams->drawTool()->restoreLastState();
@@ -407,7 +535,7 @@ void RotationalSpringForceField<DataTypes>::draw(const core::visual::VisualParam
 
 
 template<class DataTypes>
-void RotationalSpringForceField<DataTypes>::addKToMatrix(sofa::defaulttype::BaseMatrix *mat, SReal k, unsigned int &offset)
+void RotationalSpringForceField<DataTypes>::addKToMatrix(sofa::linearalgebra::BaseMatrix *mat, SReal k, unsigned int &offset)
 {
 //    for(unsigned i=0; i< _indexedElements->size() ; i++)
 //    {

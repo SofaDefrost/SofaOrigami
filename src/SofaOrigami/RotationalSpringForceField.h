@@ -109,6 +109,8 @@ public:
     void draw(const core::visual::VisualParams* vparams) override;
 
     int method;
+    type::vector<int> roundCount;
+    type::vector<double> signTemp;
     type::vector<type::vector<int>> adjacentVertices;
     Data<std::string> f_method; ///< Choice of method: 0 for small, 1 for large displacements
     Data<Real> f_poisson;       ///< Poisson ratio of the material
@@ -124,7 +126,7 @@ public:
     type::vector< type::vector<Index> > nodes;
     type::vector<Real> forceCrease;
 
-
+    void getRotationalStiffness(const Real theta, const int edgeNum, Real &M, Real &k);
     Real getPoisson() { return f_poisson.getValue(); }
     void setPoisson(Real val);
     Real getYoung() { return f_kcrease.getValue(); }
@@ -149,7 +151,7 @@ protected :
     ////////////// large displacements method
     sofa::type::vector< type::fixed_array <Coord, 3> > _rotatedInitialElements;   ///< The initials positions in its frame
     sofa::type::vector< Transformation > _rotations;
-    void addKToMatrix(sofa::defaulttype::BaseMatrix *mat, SReal k, unsigned int &offset) override; // compute and add all the element stiffnesses to the global stiffness matrix
+    void addKToMatrix(sofa::linearalgebra::BaseMatrix *mat, SReal k, unsigned int &offset) override; // compute and add all the element stiffnesses to the global stiffness matrix
     type::Mat3x3 diamond(Coord a, Coord b);
     type::Mat<3, 3, Real> InvalidTransform;
     type::fixed_array <Coord, 3> InvalidCoords;
